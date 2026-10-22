@@ -7,6 +7,17 @@ export SDK_PATH = $(THEOS)/sdks/iPhoneOS$(SDK_VERSION).sdk/
 export SYSROOT = $(SDK_PATH)
 export ARCHS = arm64
 
+# YTUHD is built as a separate Theos subproject and historically hardcodes
+# its own TARGET value. Keep it aligned with the main app SDK to prevent
+# injection failures when the project is built against a newer SDK toolchain.
+# The project is validated against iOS 26.5, so we pin the tweak to that SDK and
+# disable it automatically for other SDK versions to avoid broken package output.
+ifneq ($(SDK_VERSION),26.5)
+  $(warning YTUHD is disabled for SDK $(SDK_VERSION); this project is validated against 26.5 only to avoid injection failures.)
+  YTUHD_ENABLED = 0
+endif
+export YTUHD_TARGET = iphone:clang:$(SDK_VERSION):15.0
+
 TWEAK_NAME ?= uYouEnhanced
 DISPLAY_NAME ?= YouTube
 BUNDLE_ID ?= com.google.ios.youtube
@@ -83,7 +94,7 @@ UYOU_BUNDLE = $(UYOU_PATH)/Library/Application\ Support/uYouBundle.bundle
 include $(THEOS)/makefiles/common.mk
 
 ifneq ($(JAILBROKEN),1)
-SUBPROJECTS += Tweaks/Alderis Tweaks/DontEatMyContent Tweaks/FLEXing/libflex Tweaks/Return-YouTube-Dislikes Tweaks/YTABConfig Tweaks/YouGroupSettings Tweaks/YTIcons Tweaks/YouLoop Tweaks/YouPiP Tweaks/YouQuality Tweaks/YouSlider Tweaks/YouSpeed Tweaks/YouTimeStamp Tweaks/YTHoldForSpeed Tweaks/YTVideoOverlay Tweaks/YTweaks Tweaks/YouTubeLegacy
+SUBPROJECTS += Tweaks/Alderis Tweaks/DontEatMyContent Tweaks/FLEXing/libflex Tweaks/Return-YouTube-Dislikes Tweaks/YTABConfig Tweaks/YouGroupSettings Tweaks/YTIcons Tweaks/YouLoop Tweaks/YouPiP Tweaks/YouQuality Tweaks/YouSlider Tweaks/YouSpeed Tweaks/YouTimeStamp Tweaks/YTVideoOverlay Tweaks/YTweaks Tweaks/YouTubeLegacy Tweaks/YouTubeHeader Tweaks/YouTubeDislikesReturn Tweaks/NoYTPremium Tweaks/PSHeader Tweaks/YouTubeHeader Tweaks/RemoteLog Tweaks/YouTubeHeader Tweaks/YTAmbientLight Tweaks/YouMute Tweaks/YouGroupSettings Tweaks/YouQuality Tweaks/YouTimeStamp Tweaks/YouLoop Tweaks/YouPiP Tweaks/YouSlider Tweaks/YouSpeed Tweaks/YouTubeHeader Tweaks/YouTubeLegacy Tweaks/YTVideoOverlay Tweaks/YTClassicVideoQuality Tweaks/YTHoldForSpeed Tweaks/YTIcons Tweaks/YTABConfig Tweaks/NoYTPremium	
 ifeq ($(SPONSORBLOCK_ENABLED),1)
 SUBPROJECTS += Tweaks/iSponsorBlock
 endif
@@ -107,8 +118,8 @@ before-all::
 	fi
 before-all::
 	@if [[ ! -f $(UYOU_DEB) ]]; then \
- 		curl -s -L "https://www.dropbox.com/scl/fi/01vvu5lm8nkkicrznku9v/com.miro.uyou_$(UYOU_VERSION)_iphoneos-arm.deb?rlkey=efgz7po8kqqvha8doplk1s3ky&dl=1" -o $(UYOU_DEB); \
- 	fi; \
+	 	curl -s -L "https://www.dropbox.com/scl/fi/01vvu5lm8nkkicrznku9v/com.miro.uyou_$(UYOU_VERSION)_iphoneos-arm.deb?rlkey=efgz7po8kqqvha8doplk1s3ky&dl=1" -o $(UYOU_DEB); \
+	fi; \
 	if [[ ! -f $(UYOU_DYLIB) || ! -d $(UYOU_BUNDLE) ]]; then \
 		tar -xf Tweaks/uYou/com.miro.uyou_$(UYOU_VERSION)_iphoneos-arm.deb -C Tweaks/uYou; tar -xf Tweaks/uYou/data.tar* -C Tweaks/uYou; \
 		if [[ ! -f $(UYOU_DYLIB) || ! -d $(UYOU_BUNDLE) ]]; then \
@@ -127,4 +138,3 @@ before-package::
 endif
 after-stage::
 	@bash tools/stage-ffmpeg.sh "$(THEOS_STAGING_DIR)"
-
