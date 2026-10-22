@@ -188,32 +188,6 @@ jobs:
           path: main/modules/ffmpeg
           key: ${{ steps.ffmpeg_cache.outputs.cache-primary-key }}
 
-      - name: Keep YTUHD only on supported SDK
-        run: |
-          if [ "${{ inputs.sdk_version }}" != "26.5" ]; then
-            echo "YTUHD is only supported for SDK 26.5 in this workflow; forcing YTUHD off."
-            echo "YTUHD_ENABLED=0" >> $GITHUB_ENV
-          else
-            echo "YTUHD_ENABLED=1" >> $GITHUB_ENV
-          fi
-
-      - name: Align YTUHD SDK target with selected SDK
-        run: |
-          set -euo pipefail
-          YTUHD_MK="main/Tweaks/YTUHD/Makefile"
-          if [ -f "$YTUHD_MK" ]; then
-            echo "Patching YTUHD submodule target to SDK ${{ inputs.sdk_version }}"
-            sed -i '' \
-              -e "s/iphone:clang:latest:15.0/iphone:clang:${{ inputs.sdk_version }}:15.0/g" \
-              -e "s/iphone:clang:[^:]*:15.0/iphone:clang:${{ inputs.sdk_version }}:15.0/g" \
-              "$YTUHD_MK"
-
-            echo "--- YTUHD Makefile after patch ---"
-            grep -n "TARGET" "$YTUHD_MK" || true
-          else
-            echo "::warning::YTUHD submodule not present; skipping patch"
-          fi
-
       - name: Fix compiling & Build Package
         id: build_package
         run: |
